@@ -82,6 +82,7 @@ local ball = Ball.new(400, 300, 10)
 local server = 1
 
 gameState = "menu"
+gameOver = false
 
 --Update function--updates all objects
 function love.update(dt)
@@ -114,10 +115,14 @@ function love.update(dt)
             else
                 paddle2.score = paddle2.score + 1
             end
+            if paddle1.score == 2 or paddle2.score == 2 then
+                gameState = "end"
+            else
+                gameState = "start"
+            end
             paddle1:reset(screenWidth, screenHeight)
             paddle2:reset(screenWidth, screenHeight)
             server = server * -1
-            gameState = "start"
         end
     end
 end
@@ -144,7 +149,7 @@ function love.draw()
             love.graphics.printf("Press Escape to Return to the Menu", 0, 400, screenWidth, "center")
             drawBackButton()
         end
-    elseif gameState == "start" or gameState == "play" then
+    elseif gameState == "start" or gameState == "play" or gameState == "end" then
         --set background color
         love.graphics.setBackgroundColor(0.125, 0.368, 0.149)
         --place line in middle of screen
@@ -158,5 +163,22 @@ function love.draw()
         paddle2:draw()
         --place ball
         ball:draw()
+
+        if gameState == "end" then
+            love.graphics.setColor(0.9, 0.9, 0.9)
+            textWidth = love.graphics.getFont():getWidth("Game Over")
+            love.graphics.printf("Game Over", 100, 100, 600, "left")
+            if paddle1.score == 2 then
+                love.graphics.printf("Player 1 Wins!", 100, 150, 600, "left")
+            else
+                love.graphics.printf("Player 2 Wins!", 100, 150, 600, "left")
+            end
+            love.graphics.printf("Press Enter to Play Again", 100, 200, 600, "left")
+            if love.keyboard.isDown("return") then
+                paddle1.score = 0
+                paddle2.score = 0
+                gameState = "start"
+            end
+        end
     end
 end
