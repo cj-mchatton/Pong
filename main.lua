@@ -1,6 +1,8 @@
 --Needs
--- game over
 -- sound effects
+--  game over
+--  fix bug where double sound when clicking escape on controls screen
+-- fix bug where paddles dont reset when pressing escape in the middle of a game
 -- music
 -- inscrease speed of ball?
 -- change fonts
@@ -34,6 +36,8 @@ function drawMenuButtons()
         if love.mouse.getX() > buttonX and love.mouse.getX() < buttonX + buttonWidth and love.mouse.getY() > buttonY and love.mouse.getY() < buttonY + buttonHeight then
             r, g, b = 0, 0, 0
             if love.mouse.isDown(1) then
+                sound = love.audio.newSource("sounds/button_click.ogg", "static")
+                sound:play()
                 button.fn()
             end
         end
@@ -56,6 +60,8 @@ function drawBackButton()
     if love.mouse.getX() > buttonX and love.mouse.getX() < buttonX + buttonWidth and love.mouse.getY() > buttonY and love.mouse.getY() < buttonY + buttonHeight then
         r, g, b = 0.8, 0.8, 0.8
         if love.mouse.isDown(1) then
+            sound = love.audio.newSource("sounds/button_click.ogg", "static")
+            sound:play()
             backButton.fn()
         end
     end
@@ -100,11 +106,14 @@ function love.update(dt)
         paddle1:update(dt, 1, screenWidth, screenHeight)
         paddle2:update(dt, 2, screenWidth, screenHeight)
         ball:update(dt, screenWidth, screenHeight, server)
+        sound = love.audio.newSource("sounds/paddle_hit.ogg", "static")
         if ball:collides(paddle1) then
+            sound:play()
             ball.angle = math.pi - ball.angle
             ball.x = paddle1.x + paddle1.width + ball.radius
         end
         if ball:collides(paddle2) then
+            sound:play()
             ball.angle = math.pi - ball.angle
             ball.x = paddle2.x - ball.radius
         end
@@ -116,6 +125,8 @@ function love.update(dt)
                 paddle2.score = paddle2.score + 1
             end
             if paddle1.score == 2 or paddle2.score == 2 then
+                sound = love.audio.newSource("sounds/game_over.ogg", "static")
+                sound:play()
                 gameState = "end"
             else
                 gameState = "start"
@@ -125,6 +136,15 @@ function love.update(dt)
             server = server * -1
         end
     end
+    if love.keyboard.isDown("escape") then
+        paddle1.score = 0
+        paddle2.score = 0
+        ball.x = screenWidth / 2
+        ball.y = screenHeight / 2
+        gameOver = false
+        gameState = "menu"
+    end
+
 end
 
 --draws all objects, background, and text
@@ -167,13 +187,14 @@ function love.draw()
         if gameState == "end" then
             love.graphics.setColor(0.9, 0.9, 0.9)
             textWidth = love.graphics.getFont():getWidth("Game Over")
-            love.graphics.printf("Game Over", 100, 100, 600, "left")
+            love.graphics.printf("Game Over", 0, 100, 400, "center")
             if paddle1.score == 2 then
-                love.graphics.printf("Player 1 Wins!", 100, 150, 600, "left")
+                love.graphics.printf("Player 1 Wins!", 0, 150, 400, "center")
             else
-                love.graphics.printf("Player 2 Wins!", 100, 150, 600, "left")
+                love.graphics.printf("Player 2 Wins!", 0, 150, 400, "center")
             end
-            love.graphics.printf("Press Enter to Play Again", 100, 200, 600, "left")
+            love.graphics.printf("Press Enter to Play Again", 0, 200, 400, "center")
+            love.graphics.printf("Press Escape to Return to the Menu", 0, 250, 400, "center")
             if love.keyboard.isDown("return") then
                 paddle1.score = 0
                 paddle2.score = 0

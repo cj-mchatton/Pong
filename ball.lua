@@ -25,12 +25,16 @@ function Ball:update(dt, width, height, serve)
         self.x = self.x - self.speed * math.cos(self.angle) * dt
     end
     self.y = self.y + self.speed * math.sin(self.angle) * dt
-    if self.y < 0 then
-        self.y = 0
-        self.angle = -self.angle
-    elseif self.y > height then
-        self.y = height
-        self.angle = -self.angle
+    if self.y < 0 or self.y > height then
+        sound = love.audio.newSource("sounds/wall_hit.ogg", "static")
+        sound:play()
+        if self.y < 0 then
+            self.y = 0
+            self.angle = -self.angle
+        elseif self.y > height then
+            self.y = height
+            self.angle = -self.angle
+        end
     end
 end
 
