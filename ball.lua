@@ -56,6 +56,8 @@ function Ball:reset(width, height)
         else
             data.winner = 1
         end
+        sound = love.audio.newSource("sounds/past_paddle.mp3", "static")
+        sound:play()
         self.x = width / 2
         self.y = height / 2
         self.angle = (4 * math.pi / 3) * math.random(1, 2)

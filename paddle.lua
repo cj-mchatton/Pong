@@ -18,7 +18,7 @@ end
 
 function Paddle:draw()
     love.graphics.setColor(0.9, 0.9, 0.9)
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, 5, 5)
 end
 
 function Paddle:update(dt, player, width, height)
