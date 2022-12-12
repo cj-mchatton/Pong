@@ -2,12 +2,13 @@
 -- sound effects
 --  change button click sound
 --  music?
--- increase speed of ball?
+-- increase speed of paddles
 -- need more comments
 -- add introduction screen/gameState
 --  "Please view the 'read me' before playing."
 --  "Cameron McHatton presents..."
 --  "Pong"
+--   bug that skips the second intro screen
 
 -- import classes
 require "paddle"
@@ -87,6 +88,7 @@ function love.load()
     pixelFontPresents = love.graphics.newFont("fonts/04B_30__.TTF", 15)
     pixelFontButtons = love.graphics.newFont("fonts/04B_30__.TTF", 25)
     pixelFontControls = love.graphics.newFont("fonts/04B_30__.TTF", 20)
+    pixelFontIntroText = love.graphics.newFont("fonts/04B_30__.TTF", 40)
     pixelFontControlsTitle = love.graphics.newFont("fonts/04B_30__.TTF", 60)
     pixelFontTitle = love.graphics.newFont("fonts/04B_30__.TTF", 100)
     love.window.setTitle("Pong")
@@ -104,7 +106,7 @@ local ball = Ball.new(400, 300, 10)
 local server = 1
 
 -- keep track of the game state and if the game is over in order to display the correct screen
-gameState = "menu"
+gameState = "intro1"
 gameOver = false
 
 -- update the screen and keep a steady frame rate
@@ -119,6 +121,16 @@ function love.update(dt)
             gameState = "play"
         end
     end
+    if gameState == "intro1" then
+        if love.keyboard.isDown("return") then
+            gameState = "intro2"
+        end
+    end
+    if gameState == "intro2" then
+        if love.keyboard.isDown("return") then
+            gameState = "menu"
+        end
+    end
     -- if gameState is play, then play
     if gameState == "play" then
         paddle1:update(dt, 1, screenWidth, screenHeight)
@@ -129,11 +141,13 @@ function love.update(dt)
             sound:play()
             ball.angle = math.pi - ball.angle
             ball.x = paddle1.x + paddle1.width + ball.radius
+            ball:setSpeed(ball.speed + 10)
         end
         if ball:collides(paddle2) then
             sound:play()
             ball.angle = math.pi - ball.angle
             ball.x = paddle2.x - ball.radius
+            ball:setSpeed(ball.speed + 10)
         end
         local gameData = ball:reset(screenWidth, screenHeight)
         if gameData.gameState == "start" then
@@ -142,7 +156,7 @@ function love.update(dt)
             else
                 paddle2.score = paddle2.score + 1
             end
-            if paddle1.score == 2 or paddle2.score == 2 then
+            if paddle1.score == 7 or paddle2.score == 7 then
                 sound = love.audio.newSource("sounds/game_over.ogg", "static")
                 sound:play()
                 gameState = "end"
@@ -170,7 +184,7 @@ end
 
 --draws all objects, background, and text. Also draws the correct screen based on the game state
 function love.draw()
-    if gameState == "menu" or gameState == "controls" then
+    if gameState == "menu" or gameState == "controls" or gameState == "intro1" or gameState == "intro2" then
         love.graphics.setBackgroundColor(0.1, 0.1, 0.1)
         local sx = love.graphics.getWidth() / background:getWidth()
         local sy = love.graphics.getHeight() / background:getHeight()
@@ -193,7 +207,14 @@ function love.draw()
             love.graphics.printf("Press Escape to Return to the Menu", 0, 350, screenWidth, "center")
             love.graphics.printf("First to 7 Points Wins", 0, 400, screenWidth, "center")
             drawBackButton()
+        elseif gameState == "intro1" then
+            love.graphics.setFont(pixelFontIntroText)
+            love.graphics.printf("Cameron McHatton presents...", 0, 100, screenWidth, "center")
+        elseif gameState == "intro2" then
+            love.graphics.setFont(pixelFontIntroText)
+            love.graphics.printf("Pong", 0, 100, screenWidth, "center")
         end
+    
     elseif gameState == "start" or gameState == "play" or gameState == "end" then
         --set background color
         love.graphics.setBackgroundColor(0.125, 0.368, 0.149)
@@ -218,7 +239,7 @@ function love.draw()
             love.graphics.rectangle("fill", 10, 90, screenWidth - 20, 200)
             love.graphics.setColor(0.9, 0.9, 0.9)
             love.graphics.printf("Game Over", 0, 100, screenWidth, "center")
-            if paddle1.score == 2 then
+            if paddle1.score == 7 then
                 love.graphics.printf("Player 1 Wins!", 0, 150, screenWidth, "center")
             else
                 love.graphics.printf("Player 2 Wins!", 0, 150, screenWidth, "center")

@@ -61,7 +61,12 @@ function Ball:reset(width, height)
         self.x = width / 2
         self.y = height / 2
         self.angle = (4 * math.pi / 3) * math.random(1, 2)
+        self.speed = 600
         data.gameState = "start"
     end
     return data
+end
+
+function Ball:setSpeed(newSpeed)
+    self.speed = newSpeed;
 end
