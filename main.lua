@@ -3,7 +3,7 @@
 --  change button click sound
 --  music?
 -- need more comments
--- fix game over screen
+-- bug: pressing escape on controls screen causes menu to decrease brightness then increase brightness
 
 -- import classes
 require "paddle"
@@ -155,7 +155,7 @@ function love.update(dt)
             else
                 paddle2.score = paddle2.score + 1
             end
-            if paddle1.score == 7 or paddle2.score == 7 then
+            if paddle1.score == 2 or paddle2.score == 2 then
                 sound = love.audio.newSource("sounds/game_over.ogg", "static")
                 sound:play()
                 gameState = "end"
@@ -240,7 +240,12 @@ function love.draw()
         -- love.graphics.draw(gameBackground, 0, 0, 0, sx, sy)
         --place line in middle of screen
         love.graphics.setColor(1, 1, 1, 0.5)
-        love.graphics.rectangle("fill", screenWidth / 2 - 2, 0, 2, screenHeight)
+        if gameState == "start" or gameState == "play" then
+            love.graphics.rectangle("fill", screenWidth / 2 - 2, 0, 2, screenHeight)
+        elseif gameState == "end" then
+            love.graphics.rectangle("fill", screenWidth / 2 - 2, 0, 2, 90)
+            love.graphics.rectangle("fill", screenWidth / 2 - 2, 300, 2, screenHeight)
+        end
         --place score and player names
         love.graphics.print(paddle1.score, screenWidth / 2 - 50, 25)
         love.graphics.print(paddle2.score, screenWidth / 2 + 30, 25)
@@ -255,11 +260,9 @@ function love.draw()
         ball:draw()
 
         if gameState == "end" then
-            love.graphics.setColor(0.125, 0.368, 0.149)
-            love.graphics.rectangle("fill", 10, 90, screenWidth - 20, 200)
             love.graphics.setColor(0.9, 0.9, 0.9)
             love.graphics.printf("Game Over", 0, 100, screenWidth, "center")
-            if paddle1.score == 7 then
+            if paddle1.score == 2 then
                 love.graphics.printf("Player 1 Wins!", 0, 150, screenWidth, "center")
             else
                 love.graphics.printf("Player 2 Wins!", 0, 150, screenWidth, "center")
