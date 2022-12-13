@@ -45,4 +45,8 @@ end
 function Paddle:reset(width, height)
     self.x = self.startX
     self.y = self.startY
+    self.speed = 550
+end
+function Paddle:setSpeed(speed)
+    self.speed = speed
 end

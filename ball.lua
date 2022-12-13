@@ -14,7 +14,7 @@ function Ball.new(x, y, radius)
 end
 
 function Ball:draw()
-    love.graphics.setColor(0.874, 1, 0.31)
+    love.graphics.setColor(0.9, 0.9, 0.9)
     love.graphics.circle("fill", self.x, self.y, self.radius)
 end
 
