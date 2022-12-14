@@ -1,9 +1,7 @@
 --Needs
--- sound effects
---  change button click sound
---  music?
+--  single player support
+--  options screen
 -- need more comments
--- bug: pressing escape on controls screen causes menu to decrease brightness then increase brightness
 
 -- import classes
 require "paddle"
@@ -22,7 +20,14 @@ end
 local buttons = {}
 table.insert(buttons, newButton("Start", function() gameState = "start" end))
 table.insert(buttons, newButton("Read Me", function() gameState = "controls" end))
-table.insert(buttons, newButton("Exit", function() love.event.quit() end))
+table.insert(buttons, newButton("Exit",
+    function()
+        buttonClickSound:play()
+        -- sleep for 0.5 seconds to allow the button click sound to play
+        love.timer.sleep(0.5)
+        love.event.quit()
+    end
+))
 -- create a back button for the controls screen
 backButton = newButton("Back", function() gameState = "menu" end)
 
@@ -38,8 +43,7 @@ function drawMenuButtons()
         if love.mouse.getX() > buttonX and love.mouse.getX() < buttonX + buttonWidth and love.mouse.getY() > buttonY and love.mouse.getY() < buttonY + buttonHeight then
             r, g, b = 0, 0, 0
             if love.mouse.isDown(1) then
-                sound = love.audio.newSource("sounds/button_click.ogg", "static")
-                sound:play()
+                buttonClickSound:play()
                 button.fn()
             end
         end
@@ -64,8 +68,7 @@ function drawBackButton()
     if love.mouse.getX() > buttonX and love.mouse.getX() < buttonX + buttonWidth and love.mouse.getY() > buttonY and love.mouse.getY() < buttonY + buttonHeight then
         r, g, b = 0, 0, 0
         if love.mouse.isDown(1) then
-            sound = love.audio.newSource("sounds/button_click.ogg", "static")
-            sound:play()
+            buttonClickSound:play()
             backButton.fn()
         end
     end
@@ -81,14 +84,29 @@ end
 function love.load()
     background = love.graphics.newImage("sprites/pixel_sky.jpg")
     gameBackground = love.graphics.newImage("sprites/game_background.jpg")
+
     pixelFontPresents = love.graphics.newFont("fonts/04B_30__.TTF", 15)
     pixelFontButtons = love.graphics.newFont("fonts/04B_30__.TTF", 25)
     pixelFontControls = love.graphics.newFont("fonts/04B_30__.TTF", 20)
     pixelFontIntroText = love.graphics.newFont("fonts/04B_30__.TTF", 40)
     pixelFontControlsTitle = love.graphics.newFont("fonts/04B_30__.TTF", 60)
     pixelFontTitle = love.graphics.newFont("fonts/04B_30__.TTF", 100)
+
+    buttonClickSound = love.audio.newSource("sounds/button_click.mp3", "static")
+    gameMusic = love.audio.newSource("sounds/game_music.mp3", "stream")
+    gameMusic:setLooping(true)
+    gameOverSound = love.audio.newSource("sounds/game_over.mp3", "static")
+    menuMusic = love.audio.newSource("sounds/menu_music.mp3", "stream")
+    menuMusic:setLooping(true)
+    paddleHitSound = love.audio.newSource("sounds/paddle_hit.ogg", "static")
+    pastPaddleSound = love.audio.newSource("sounds/past_paddle.mp3", "static")
+    wallHitSound = love.audio.newSource("sounds/wall_hit.ogg", "static")
+
     love.window.setTitle("Pong")
     love.window.setMode(screenWidth, screenHeight, {resizable=false, vsync=false})
+
+    -- start the menu music
+    menuMusic:play()
 end
 
 -- create paddles
@@ -123,6 +141,7 @@ function love.update(dt)
     end
     if gameState == "intro" then
         if love.keyboard.isDown("return") then
+            buttonClickSound:play()
             gameState = "menu"
         end
     end
@@ -131,9 +150,8 @@ function love.update(dt)
         paddle1:update(dt, 1, screenWidth, screenHeight)
         paddle2:update(dt, 2, screenWidth, screenHeight)
         ball:update(dt, screenWidth, screenHeight, server)
-        sound = love.audio.newSource("sounds/paddle_hit.ogg", "static")
         if ball:collides(paddle1) then
-            sound:play()
+            paddleHitSound:play()
             ball.angle = math.pi - ball.angle
             ball.x = paddle1.x + paddle1.width + ball.radius
             ball:setSpeed(ball.speed + 20)
@@ -141,7 +159,7 @@ function love.update(dt)
             paddle2:setSpeed(paddle2.speed + 10)
         end
         if ball:collides(paddle2) then
-            sound:play()
+            paddleHitSound:play()
             ball.angle = math.pi - ball.angle
             ball.x = paddle2.x - ball.radius
             ball:setSpeed(ball.speed + 20)
@@ -155,9 +173,8 @@ function love.update(dt)
             else
                 paddle2.score = paddle2.score + 1
             end
-            if paddle1.score == 2 or paddle2.score == 2 then
-                sound = love.audio.newSource("sounds/game_over.ogg", "static")
-                sound:play()
+            if paddle1.score == 7 or paddle2.score == 7 then
+                gameOverSound:play()
                 gameState = "end"
             else
                 gameState = "start"
@@ -176,10 +193,13 @@ function love.update(dt)
         paddle1:reset(screenWidth, screenHeight)
         paddle2:reset(screenWidth, screenHeight)
         gameOver = false
-        backgroundColor = 0.4
         gameState = "menu"
     end
     if gameState == "start" or gameState == "play" or gameState == "end" then
+        
+        menuMusic:pause()
+        gameMusic:play()
+
         count = count + dt
         if count > updateDelay then
             if backgroundColor > 0.4 then
@@ -187,7 +207,14 @@ function love.update(dt)
             end
             count = 0
         end
-    elseif gameState == "menu" then
+        if love.keyboard.isDown("escape") then
+            backgroundColor = 0.4
+        end
+    elseif gameState == "menu" or gameState == "intro" or gameState == "controls" then
+
+        gameMusic:pause()
+        menuMusic:play()
+
         count = count + dt
         if count > updateDelay then
             if backgroundColor < 0.9 then
@@ -212,7 +239,7 @@ function love.draw()
         love.graphics.printf("Pong", 0, 70, screenWidth, "center")
         if gameState == "intro" then
             love.graphics.setFont(pixelFontPresents)
-            love.graphics.printf("Please view the controls before playing", 0, 300, screenWidth, "center")
+            love.graphics.printf("Please visit the 'Read Me' menu before playing", 0, 300, screenWidth, "center")
             if math.floor((love.timer.getTime()) % 2) - 1 == 0 then
                 love.graphics.printf("Press Enter to Continue...", 0, 350, screenWidth, "center")
             end
@@ -232,12 +259,6 @@ function love.draw()
         drawBackButton()
 
     elseif gameState == "start" or gameState == "play" or gameState == "end" then
-        --set background color
-        -- love.graphics.setColor(backgroundColor, backgroundColor, backgroundColor)
-        -- local sx = love.graphics.getWidth() / gameBackground:getWidth()
-        -- local sy = love.graphics.getHeight() / gameBackground:getHeight()
-        -- --draw background and buttons
-        -- love.graphics.draw(gameBackground, 0, 0, 0, sx, sy)
         --place line in middle of screen
         love.graphics.setColor(1, 1, 1, 0.5)
         if gameState == "start" or gameState == "play" then
@@ -262,7 +283,7 @@ function love.draw()
         if gameState == "end" then
             love.graphics.setColor(0.9, 0.9, 0.9)
             love.graphics.printf("Game Over", 0, 100, screenWidth, "center")
-            if paddle1.score == 2 then
+            if paddle1.score == 7 then
                 love.graphics.printf("Player 1 Wins!", 0, 150, screenWidth, "center")
             else
                 love.graphics.printf("Player 2 Wins!", 0, 150, screenWidth, "center")
