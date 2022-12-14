@@ -1,5 +1,6 @@
 local love = require "love"
 
+-- ball object
 Ball = {}
 Ball.__index = Ball
 
@@ -13,12 +14,14 @@ function Ball.new(x, y, radius)
     return self
 end
 
+-- draw ball
 function Ball:draw()
     love.graphics.setColor(0.9, 0.9, 0.9)
     love.graphics.circle("fill", self.x, self.y, self.radius)
 end
 
-function Ball:update(dt, width, height, serve)
+-- update ball position based on angle and speed
+function Ball:update(dt, width, height, serve, sound)
     if serve == 1 then
         self.x = self.x + self.speed * math.cos(self.angle) * dt
     elseif serve == -1 then
@@ -26,7 +29,6 @@ function Ball:update(dt, width, height, serve)
     end
     self.y = self.y + self.speed * math.sin(self.angle) * dt
     if self.y < 0 or self.y > height then
-        sound = love.audio.newSource("sounds/wall_hit.ogg", "static")
         sound:play()
         if self.y < 0 then
             self.y = 0
@@ -38,6 +40,7 @@ function Ball:update(dt, width, height, serve)
     end
 end
 
+-- check if ball collides with paddle
 function Ball:collides(paddle)
     if self.x - self.radius > paddle.x + paddle.width or self.x + self.radius < paddle.x then
         return false
@@ -48,7 +51,8 @@ function Ball:collides(paddle)
     return true
 end
 
-function Ball:reset(width, height)
+-- reset ball position, angle, and speed, then return data (gameState and winnder)
+function Ball:reset(width, height, sound)
     local data = {gameState = "play", winner = 0}
     if self.x < 0 or self.x > width then
         if self.x < 0 then
@@ -56,7 +60,6 @@ function Ball:reset(width, height)
         else
             data.winner = 1
         end
-        sound = love.audio.newSource("sounds/past_paddle.mp3", "static")
         sound:play()
         self.x = width / 2
         self.y = height / 2
@@ -67,6 +70,7 @@ function Ball:reset(width, height)
     return data
 end
 
+-- set ball speed
 function Ball:setSpeed(newSpeed)
     self.speed = newSpeed;
 end
