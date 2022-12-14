@@ -13,6 +13,7 @@ function Paddle.new(x, y, width, height)
     self.height = height
     self.speed = 550
     self.score = 0
+    self.cpu = false
     return self
 end
 
@@ -21,18 +22,31 @@ function Paddle:draw()
     love.graphics.rectangle("fill", self.x, self.y, self.width, self.height, 5, 5)
 end
 
-function Paddle:update(dt, player, width, height)
-    if player == 1 then
-        if love.keyboard.isDown("w") then
-            self.y = self.y - self.speed * dt
-        elseif love.keyboard.isDown("s") then
+function Paddle:update(dt, player, width, height, ball)
+    if self.cpu then
+        if ball.y > self.y + self.height / 2 then
             self.y = self.y + self.speed * dt
+        elseif ball.y < self.y + self.height / 2 then
+            self.y = self.y - self.speed * dt
         end
-    elseif player == 2 then
-        if love.keyboard.isDown("up") then
-            self.y = self.y - self.speed * dt
-        elseif love.keyboard.isDown("down") then
-            self.y = self.y + self.speed * dt
+        if self.y < 0 then
+            self.y = 0
+        elseif self.y > height - self.height then
+            self.y = height - self.height
+        end
+    else 
+        if player == 1 then
+            if love.keyboard.isDown("w") then
+                self.y = self.y - self.speed * dt
+            elseif love.keyboard.isDown("s") then
+                self.y = self.y + self.speed * dt
+            end
+        elseif player == 2 then
+            if love.keyboard.isDown("up") then
+                self.y = self.y - self.speed * dt
+            elseif love.keyboard.isDown("down") then
+                self.y = self.y + self.speed * dt
+            end
         end
     end
     if self.y < 0 then

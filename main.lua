@@ -1,11 +1,14 @@
 --Needs
 --  single player support
 --  options screen
+--    logic for turning things on and off
+--  sound
+--    button click spam prevention
 -- need more comments
 
 -- import classes
-require "paddle"
 require "ball"
+require "paddle"
 local love = require "love"
 
 -- screen height and width
@@ -17,17 +20,29 @@ function newButton(text, fn)
 end
 
 -- create a buttons table and add buttons to it for the main menu
-local buttons = {}
-table.insert(buttons, newButton("Start", function() gameState = "start" end))
-table.insert(buttons, newButton("Read Me", function() gameState = "controls" end))
-table.insert(buttons, newButton("Exit",
+local menuButtons = {}
+table.insert(menuButtons, newButton("Start", function() gameState = "start" end))
+table.insert(menuButtons, newButton("Read Me", function() gameState = "controls" end))
+table.insert(menuButtons, newButton("Options", function() gameState = "options" end))
+table.insert(menuButtons, newButton("Exit",
     function()
-        buttonClickSound:play()
+        if sound then
+            buttonClickSound:play()
+        end
         -- sleep for 0.5 seconds to allow the button click sound to play
         love.timer.sleep(0.5)
         love.event.quit()
     end
 ))
+
+local optionsButtons = {}
+table.insert(optionsButtons, newButton("Sound",
+    function()
+        sound = not sound
+    end
+))
+table.insert(optionsButtons, newButton("Music", function() end))
+table.insert(optionsButtons, newButton("Two Player", function() end))
 -- create a back button for the controls screen
 backButton = newButton("Back", function() gameState = "menu" end)
 
@@ -37,13 +52,15 @@ function drawMenuButtons()
     local buttonHeight = 75
     local buttonSpacing = 20
     local buttonX = screenWidth / 2 - buttonWidth / 2
-    local buttonY = (screenHeight / 2 - (#buttons * (buttonHeight + buttonSpacing)) / 2) + 50
-    for i, button in ipairs(buttons) do
+    local buttonY = (screenHeight / 2 - (#menuButtons * (buttonHeight + buttonSpacing)) / 2) + 75
+    for i, button in ipairs(menuButtons) do
         local r, g, b = 0.9, 0.9, 0.9
         if love.mouse.getX() > buttonX and love.mouse.getX() < buttonX + buttonWidth and love.mouse.getY() > buttonY and love.mouse.getY() < buttonY + buttonHeight then
             r, g, b = 0, 0, 0
             if love.mouse.isDown(1) then
-                buttonClickSound:play()
+                if sound then
+                    buttonClickSound:play()
+                end
                 button.fn()
             end
         end
@@ -68,7 +85,9 @@ function drawBackButton()
     if love.mouse.getX() > buttonX and love.mouse.getX() < buttonX + buttonWidth and love.mouse.getY() > buttonY and love.mouse.getY() < buttonY + buttonHeight then
         r, g, b = 0, 0, 0
         if love.mouse.isDown(1) then
-            buttonClickSound:play()
+            if sound then
+                buttonClickSound:play()
+            end
             backButton.fn()
         end
     end
@@ -80,8 +99,41 @@ function drawBackButton()
     love.graphics.setColor(1, 1, 1)
 end
 
+-- draw options tick boxes
+function drawOptions()
+    local buttonWidth = 250
+    local buttonHeight = 75
+    local buttonSpacing = 20
+    local buttonX = screenWidth / 2 - buttonWidth / 2
+    local buttonY = (screenHeight / 2 - (#optionsButtons * (buttonHeight + buttonSpacing)) / 2) + 75
+    for i, button in ipairs(optionsButtons) do
+        local r, g, b = 0.9, 0.9, 0.9
+        if love.mouse.getX() > buttonX and love.mouse.getX() < buttonX + buttonWidth and love.mouse.getY() > buttonY and love.mouse.getY() < buttonY + buttonHeight then
+            r, g, b = 0, 0, 0
+            if love.mouse.isDown(1) then
+                if sound then
+                    buttonClickSound:play()
+                end
+                button.fn()
+            end
+        end
+        love.graphics.setColor(r, g, b, 0.25)
+        love.graphics.rectangle("fill", buttonX, buttonY, buttonWidth, buttonHeight)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.setFont(pixelFontButtons)
+        love.graphics.print(button.text, buttonX + buttonWidth / 2 - love.graphics.getFont():getWidth(button.text) / 2, buttonY + buttonHeight / 2 - love.graphics.getFont():getHeight(button.text) / 2)
+        buttonY = buttonY + buttonHeight + buttonSpacing
+    end
+    love.graphics.setColor(1, 1, 1)
+
+end
+
 -- load some images and fonts, then set the window title and size
 function love.load()
+
+    music = true
+    sound = true
+
     background = love.graphics.newImage("sprites/pixel_sky.jpg")
     gameBackground = love.graphics.newImage("sprites/game_background.jpg")
 
@@ -106,7 +158,9 @@ function love.load()
     love.window.setMode(screenWidth, screenHeight, {resizable=false, vsync=false})
 
     -- start the menu music
-    menuMusic:play()
+    if music then
+        menuMusic:play()
+    end
 end
 
 -- create paddles
@@ -129,11 +183,6 @@ gameOver = false
 
 -- update the screen and keep a steady frame rate
 function love.update(dt)
-    if gameState == "controls" then
-        if love.keyboard.isDown("escape") then
-            gameState = "menu"
-        end
-    end
     if gameState == "start" then
         if love.keyboard.isDown("return") then
             gameState = "play"
@@ -141,14 +190,16 @@ function love.update(dt)
     end
     if gameState == "intro" then
         if love.keyboard.isDown("return") then
-            buttonClickSound:play()
+            if sound then
+                buttonClickSound:play()
+            end
             gameState = "menu"
         end
     end
     -- if gameState is play, then play
     if gameState == "play" then
-        paddle1:update(dt, 1, screenWidth, screenHeight)
-        paddle2:update(dt, 2, screenWidth, screenHeight)
+        paddle1:update(dt, 1, screenWidth, screenHeight, ball)
+        paddle2:update(dt, 2, screenWidth, screenHeight, ball)
         ball:update(dt, screenWidth, screenHeight, server)
         if ball:collides(paddle1) then
             paddleHitSound:play()
@@ -193,12 +244,19 @@ function love.update(dt)
         paddle1:reset(screenWidth, screenHeight)
         paddle2:reset(screenWidth, screenHeight)
         gameOver = false
+        if gameState ~= "menu" then
+            if sound then
+                buttonClickSound:play()
+            end
+        end
         gameState = "menu"
     end
     if gameState == "start" or gameState == "play" or gameState == "end" then
         
-        menuMusic:pause()
-        gameMusic:play()
+        if music then
+            menuMusic:pause()
+            gameMusic:play()
+        end
 
         count = count + dt
         if count > updateDelay then
@@ -212,8 +270,10 @@ function love.update(dt)
         end
     elseif gameState == "menu" or gameState == "intro" or gameState == "controls" then
 
-        gameMusic:pause()
-        menuMusic:play()
+        if music then
+            gameMusic:pause()
+            menuMusic:play()
+        end
 
         count = count + dt
         if count > updateDelay then
@@ -249,13 +309,19 @@ function love.draw()
         end
     elseif gameState == "controls" then
         love.graphics.setFont(pixelFontControlsTitle)
-        love.graphics.printf("Controls", 0, 70, screenWidth, "center")
+        love.graphics.printf("Read Me", 0, 70, screenWidth, "center")
         love.graphics.setFont(pixelFontControls)
         love.graphics.printf("Player 1: W and S", 0, 200, screenWidth, "center")
         love.graphics.printf("Player 2: Up and Down", 0, 250, screenWidth, "center")
         love.graphics.printf("Press Enter to Start the Round", 0, 300, screenWidth, "center")
         love.graphics.printf("Press Escape to Return to the Menu", 0, 350, screenWidth, "center")
         love.graphics.printf("First to 7 Points Wins", 0, 400, screenWidth, "center")
+        drawBackButton()
+
+    elseif gameState == "options" then
+        love.graphics.setFont(pixelFontControlsTitle)
+        love.graphics.printf("Options", 0, 70, screenWidth, "center")
+        drawOptions()
         drawBackButton()
 
     elseif gameState == "start" or gameState == "play" or gameState == "end" then
